@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Offer Logic"
+  short_description: "Keep offers inside the buy box"
+  default_prompt: "Use $ubuybox-offer-logic to evaluate seller equity room and align offers to the buyer buy box."

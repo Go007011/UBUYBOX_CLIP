@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Skip Trace QA"
+  short_description: "Prepare and rank contact data"
+  default_prompt: "Use $ubuybox-skip-trace-qa to prepare list exports, review skip-trace results, and rank contact records."

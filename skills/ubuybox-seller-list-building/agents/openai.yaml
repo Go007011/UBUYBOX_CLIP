@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Seller Lists"
+  short_description: "Build absentee-owner lists"
+  default_prompt: "Use $ubuybox-seller-list-building to build absentee-owner lead lists for UBUYBOX acquisitions."

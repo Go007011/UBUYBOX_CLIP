@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX KPI Review"
+  short_description: "Review acquisition funnel KPIs"
+  default_prompt: "Use $ubuybox-kpi-review to review daily and monthly acquisitions KPIs for UBUYBOX."

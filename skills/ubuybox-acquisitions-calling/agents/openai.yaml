@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Acquisitions Calling"
+  short_description: "Run the outbound calling workflow"
+  default_prompt: "Use $ubuybox-acquisitions-calling to run the UBUYBOX calling workflow for absentee-owner leads."

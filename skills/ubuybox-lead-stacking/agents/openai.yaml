@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Lead Stacking"
+  short_description: "Tighten and rank lead lists"
+  default_prompt: "Use $ubuybox-lead-stacking to filter and prioritize UBUYBOX seller leads by motivation and fit."

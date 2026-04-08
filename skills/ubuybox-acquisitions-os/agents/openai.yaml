@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Acquisitions OS"
+  short_description: "Run the acquisitions workflow"
+  default_prompt: "Use $ubuybox-acquisitions-os to coordinate the UBUYBOX acquisitions workflow from market selection through KPI review."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Reinvestment Planning"
+  short_description: "Plan reinvestment for scale"
+  default_prompt: "Use $ubuybox-reinvestment-planning to allocate acquisition profits into marketing, tools, training, and support."

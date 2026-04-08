@@ -1,0 +1,4 @@
+interface:
+  display_name: "UBUYBOX Market Selection"
+  short_description: "Choose target metros fast"
+  default_prompt: "Use $ubuybox-market-selection to choose and score target metros for the UBUYBOX acquisitions plan."
