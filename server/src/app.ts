@@ -1,8 +1,11 @@
 import express, { Router, type Request as ExpressRequest } from "express";
+import crypto from "node:crypto";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { eq } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
+import { authAccounts, authUsers, authVerifications } from "@paperclipai/db";
 import type { DeploymentExposure, DeploymentMode } from "@paperclipai/shared";
 import type { StorageService } from "./storage/types.js";
 import { httpLogger, errorHandler } from "./middleware/index.js";
@@ -132,6 +135,86 @@ export async function createApp(
       },
     });
   });
+  // Forgot / reset password (no email required — token shown on screen)
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body as { email?: string };
+      if (!email || typeof email !== "string") {
+        res.status(400).json({ error: "Email is required" });
+        return;
+      }
+      const rows = await db.select().from(authUsers).where(
+        eq(authUsers.email, email.trim().toLowerCase()),
+      );
+      // Always return success to prevent email enumeration
+      if (rows.length === 0) {
+        res.json({ resetUrl: `/auth?mode=reset&token=invalid` });
+        return;
+      }
+      const token = crypto.randomBytes(32).toString("hex");
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour
+      await db.insert(authVerifications).values({
+        id: crypto.randomBytes(16).toString("hex"),
+        identifier: email.trim().toLowerCase(),
+        value: token,
+        expiresAt,
+        createdAt: now,
+        updatedAt: now,
+      });
+      res.json({ resetUrl: `/auth?mode=reset&token=${token}` });
+    } catch (err) {
+      logger.error({ err }, "forgot-password error");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = req.body as { token?: string; password?: string };
+      if (!token || !password || typeof token !== "string" || typeof password !== "string") {
+        res.status(400).json({ error: "Token and password are required" });
+        return;
+      }
+      if (password.length < 8) {
+        res.status(400).json({ error: "Password must be at least 8 characters" });
+        return;
+      }
+      const verRows = await db.select().from(authVerifications).where(
+        eq(authVerifications.value, token),
+      );
+      if (verRows.length === 0 || verRows[0].expiresAt < new Date()) {
+        res.status(400).json({ error: "Invalid or expired reset token" });
+        return;
+      }
+      const email = verRows[0].identifier;
+      // Hash the new password using scrypt matching Better Auth exactly:
+      // - password is NFKC-normalized
+      // - salt stored as hex string, and the hex string itself is passed as scrypt salt
+      const saltHex = crypto.randomBytes(16).toString("hex");
+      const normalizedPassword = password.normalize("NFKC");
+      const derivedKey = await new Promise<Buffer>((resolve, reject) => {
+        crypto.scrypt(normalizedPassword, saltHex, 64, { N: 16384, r: 16, p: 1, maxmem: 67108864 }, (err, key) => {
+          if (err) reject(err);
+          else resolve(key as Buffer);
+        });
+      });
+      const newHash = `${saltHex}:${derivedKey.toString("hex")}`;
+      const userRows = await db.select({ id: authUsers.id }).from(authUsers).where(eq(authUsers.email, email));
+      if (userRows.length > 0) {
+        await db.update(authAccounts)
+          .set({ password: newHash, updatedAt: new Date() })
+          .where(eq(authAccounts.userId, userRows[0].id));
+      }
+      // Delete used verification token
+      await db.delete(authVerifications).where(eq(authVerifications.value, token));
+      res.json({ success: true });
+    } catch (err) {
+      logger.error({ err }, "reset-password error");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   if (opts.betterAuthHandler) {
     app.all("/api/auth/*authPath", opts.betterAuthHandler);
   }
